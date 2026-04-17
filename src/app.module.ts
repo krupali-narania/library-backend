@@ -24,13 +24,18 @@ import { envValidationSchema } from './config/env.validation';
       useFactory: (config: ConfigService) => {
         const databaseUrl = config.get<string>('DATABASE_URL');
         const isProduction = config.get<string>('NODE_ENV') === 'production';
+        const isRender = config.get<string>('RENDER') === 'true';
+        const sslConfig = { rejectUnauthorized: false };
 
         if (databaseUrl) {
           return {
             type: 'postgres' as const,
             url: databaseUrl,
-            // Render Postgres requires TLS even if NODE_ENV is not set to production.
-            ssl: { rejectUnauthorized: false },
+            // Render Postgres requires TLS. Keep this on whenever DATABASE_URL is used.
+            ssl: sslConfig,
+            extra: {
+              ssl: sslConfig,
+            },
             autoLoadEntities: true,
             synchronize: !isProduction,
           };
@@ -43,7 +48,9 @@ import { envValidationSchema } from './config/env.validation';
           username: config.get<string>('DB_USER'),
           password: config.get<string>('DB_PASS'),
           database: config.get<string>('DB_NAME'),
-          ssl: isProduction ? { rejectUnauthorized: false } : false,
+          // If split vars are used on Render/production, still force SSL.
+          ssl: isProduction || isRender ? sslConfig : false,
+          extra: isProduction || isRender ? { ssl: sslConfig } : {},
           autoLoadEntities: true,
           synchronize: !isProduction,
         };
