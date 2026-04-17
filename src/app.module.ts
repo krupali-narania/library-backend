@@ -19,36 +19,34 @@ import { envValidationSchema } from './config/env.validation';
       validationSchema: envValidationSchema,
     }),
 
-    // TypeOrmModule.forRootAsync({
-    //   imports: [ConfigModule],
-    //   useFactory: (config: ConfigService) => ({
-    //     type: 'postgres' as const,
-    //     host: config.get<string>('DB_HOST'),
-    //     port: config.get<number>('DB_PORT'),
-    //     username: config.get<string>('DB_USER'),
-    //     password: config.get<string>('DB_PASS'),
-    //     database: config.get<string>('DB_NAME'),
-    //     autoLoadEntities: true,
-    //     synchronize: config.get<string>('NODE_ENV') !== 'production',
-    //   }),
-    //   inject: [ConfigService],
-    // }),
-
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
+      useFactory: (config: ConfigService) => {
+        const databaseUrl = config.get<string>('DATABASE_URL');
+        const isProduction = config.get<string>('NODE_ENV') === 'production';
 
-        // ✅ Use DATABASE_URL instead of separate fields (best for Render)
-        url: config.get<string>('DATABASE_URL'),
+        if (databaseUrl) {
+          return {
+            type: 'postgres' as const,
+            url: databaseUrl,
+            ssl: isProduction ? { rejectUnauthorized: false } : false,
+            autoLoadEntities: true,
+            synchronize: !isProduction,
+          };
+        }
 
-        ssl: {
-          rejectUnauthorized: false,
-        },
-
-        autoLoadEntities: true,
-        synchronize: config.get<string>('NODE_ENV') !== 'production',
-      }),
+        return {
+          type: 'postgres' as const,
+          host: config.get<string>('DB_HOST'),
+          port: config.get<number>('DB_PORT'),
+          username: config.get<string>('DB_USER'),
+          password: config.get<string>('DB_PASS'),
+          database: config.get<string>('DB_NAME'),
+          ssl: isProduction ? { rejectUnauthorized: false } : false,
+          autoLoadEntities: true,
+          synchronize: !isProduction,
+        };
+      },
       inject: [ConfigService],
     }),
     LibrariesModule,
