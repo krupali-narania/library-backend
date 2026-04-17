@@ -19,21 +19,38 @@ import { envValidationSchema } from './config/env.validation';
       validationSchema: envValidationSchema,
     }),
 
+    // TypeOrmModule.forRootAsync({
+    //   imports: [ConfigModule],
+    //   useFactory: (config: ConfigService) => ({
+    //     type: 'postgres' as const,
+    //     host: config.get<string>('DB_HOST'),
+    //     port: config.get<number>('DB_PORT'),
+    //     username: config.get<string>('DB_USER'),
+    //     password: config.get<string>('DB_PASS'),
+    //     database: config.get<string>('DB_NAME'),
+    //     autoLoadEntities: true,
+    //     synchronize: config.get<string>('NODE_ENV') !== 'production',
+    //   }),
+    //   inject: [ConfigService],
+    // }),
+
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
-        type: 'postgres' as const,
-        host: config.get<string>('DB_HOST'),
-        port: config.get<number>('DB_PORT'),
-        username: config.get<string>('DB_USER'),
-        password: config.get<string>('DB_PASS'),
-        database: config.get<string>('DB_NAME'),
+        type: 'postgres',
+
+        // ✅ Use DATABASE_URL instead of separate fields (best for Render)
+        url: config.get<string>('DATABASE_URL'),
+
+        ssl: {
+          rejectUnauthorized: false,
+        },
+
         autoLoadEntities: true,
         synchronize: config.get<string>('NODE_ENV') !== 'production',
       }),
       inject: [ConfigService],
     }),
-
     LibrariesModule,
     UsersModule,
     AuthModule,
