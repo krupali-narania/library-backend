@@ -29,7 +29,8 @@ import { envValidationSchema } from './config/env.validation';
           return {
             type: 'postgres' as const,
             url: databaseUrl,
-            ssl: isProduction ? { rejectUnauthorized: false } : false,
+            // Render Postgres requires TLS even if NODE_ENV is not set to production.
+            ssl: { rejectUnauthorized: false },
             autoLoadEntities: true,
             synchronize: !isProduction,
           };
